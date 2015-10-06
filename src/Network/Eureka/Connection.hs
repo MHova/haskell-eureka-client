@@ -166,7 +166,11 @@ withEurekaH :: Bool
 withEurekaH useTermHandle eConfig iConfig iInfo m = do
     manager <- newManager defaultManagerSettings
     when useTermHandle . void $ installHandler sigTERM (Catch $ raiseSignal sigINT) Nothing
-    bracket (connectEureka manager eConfig iConfig iInfo) disconnectEureka registerAndRun
+    bracket (connectEureka manager eConfig iConfig iInfo) disconnectEureka $
+      case iInfo of 
+        DataCenterMyOwn{registerSelf = False} -> m
+        _                                     -> registerAndRun
+
   where
     registerAndRun eConn = do
         registerInstance eConn

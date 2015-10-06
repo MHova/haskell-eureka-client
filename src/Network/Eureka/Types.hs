@@ -148,12 +148,13 @@ data AmazonDataCenterInfo =
     amazonPublicIpv4 :: String
   } deriving (Show)
 
-data DataCenterInfo = DataCenterMyOwn
+data DataCenterInfo = DataCenterMyOwn {registerSelf :: Bool}
                     | DataCenterAmazon AmazonDataCenterInfo deriving Show
 
 instance ToJSON DataCenterInfo where
-    toJSON DataCenterMyOwn = object [
-        "name" .= ("MyOwn" :: String)
+    toJSON DataCenterMyOwn{registerSelf} = object [
+        "name"          .= ("MyOwn" :: String),
+        "registerSelf"  .= registerSelf 
         ]
     toJSON (DataCenterAmazon AmazonDataCenterInfo {
           amazonAmiId
@@ -182,8 +183,8 @@ instance FromJSON DataCenterInfo where
     parseJSON (Object v) = do
         name <- v .: "name"
         case name of
-            "MyOwn" -> return DataCenterMyOwn
-            "Amazon" -> do
+            "MyOwn"   -> DataCenterMyOwn <$> v .:? "registerSelf" .!= True
+            "Amazon"  -> do
                 metadata <- v .: "metadata"
                 DataCenterAmazon <$> (AmazonDataCenterInfo
                     <$> metadata .: "ami-id"
